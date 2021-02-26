@@ -157,6 +157,10 @@ func (self *Database) GetUserByUsername(username string) (*User, error) {
 	return self.getUserBy("username", username)
 }
 
+// TODO
+// GetUserBySocialAccount
+// This will help with changing emails and usernames...
+
 // GetUsers get list of users
 func (self *Database) GetUsers() ([]*User, error) {
 	var users []*User

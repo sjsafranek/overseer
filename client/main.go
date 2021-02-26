@@ -84,7 +84,6 @@ func main() {
 		return
 	}
 
-
 	// Create apikey if none exists
 	if 0 == len(user.GetApikeys()) {
 		response, err = client.CreateUserApikey(ctx, &pb.Request{Username: username, Name: "test_key"})

@@ -66,4 +66,11 @@ message Apikey {
     bool is_active = 6;
     string created_at = 7;
     string updated_at = 8;
+    repeated Permission permissions = 9;
+}
+
+// The permission definition
+message Permission {
+    action = 1;
+    type = 2;
 }
