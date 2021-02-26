@@ -15,7 +15,7 @@ import (
 	"flag"
 
 	"google.golang.org/grpc"
-	pb "github.com/sjsafranek/goauthserver/service"
+	pb "github.com/sjsafranek/overseer/service"
 )
 
 func main() {
@@ -38,14 +38,26 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := pb.NewAuthenticationClient(conn)
+	client := pb.NewOverseerClient(conn)
 
 	// Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r, err := c.AuthenticateUser(ctx, &pb.Request{Username: username, Password: password})
+
+	// Authenticate user
+	response, err := client.AuthenticateUser(ctx, &pb.Request{Username: username, Password: password})
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("%v", r.GetUser().GetUsername())
+	user := response.GetUser()
+	log.Printf("%+v", user)
+
+	// Create apikey if none exists
+	if 0 == len(user.GetApikeys()) {
+		response, err = client.CreateUserApikey(ctx, &pb.Request{Username: username, Name: "test_key"})
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("%+v", response.GetApikey())
+	}
 }

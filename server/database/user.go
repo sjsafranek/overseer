@@ -7,8 +7,9 @@ import (
 	"time"
 )
 
+// User struct of user object
 type User struct {
-	ID        string    `json:"id"`
+	Id        string    `json:"id"`
 	Username  string    `json:"username"`
 	Password  string    `json:"-"`
 	Email     string    `json:"email"`
@@ -16,8 +17,8 @@ type User struct {
 	IsActive  bool      `json:"is_active"`
 	CreatedAt time.Time `json:"created_at,string"`
 	UpdatedAt time.Time `json:"updated_at,string"`
-	Apikeys   []Apikey  `json:"keys"`
-	db          *Database `json:"-"`
+	Apikeys   []Apikey  `json:"apikeys"`
+	db        *Database `json:"-"`
 }
 
 // SetEmail sets user email
@@ -26,31 +27,31 @@ func (self *User) SetEmail(email string) error {
 	return self.Update()
 }
 
-// SetPassword sets password
+// SetPassword sets user password
 func (self *User) SetPassword(password string) error {
 	self.Password = password
 	return self.Update()
 }
 
-// Delete deletes user
+// Delete markers object as deleted
 func (self *User) Delete() error {
 	self.IsDeleted = true
 	return self.Update()
 }
 
-// Activate deletes user
+// Activate markers object as active
 func (self *User) Activate() error {
 	self.IsActive = true
 	return self.Update()
 }
 
-// Deactivate deletes user
+// Deactivate markers object as inactive
 func (self *User) Deactivate() error {
 	self.IsActive = false
 	return self.Update()
 }
 
-// Update updates user data in database
+// Update updates object data in database
 func (self *User) Update() error {
 	return self.db.Insert(`
 		UPDATE users
@@ -62,8 +63,9 @@ func (self *User) Update() error {
 			WHERE username=$5;`, self.Email, self.Password, self.IsDeleted, self.IsActive, self.Username)
 }
 
+// SetDatabase set object database reference
 func (self *User) SetDatabase(db *Database) {
-    self.db = db
+	self.db = db
 }
 
 // IsPassword checks if provided password/hash matches database record
@@ -85,26 +87,7 @@ func (self *User) IsPassword(password string) (bool, error) {
 	})
 }
 
-/**
- * Social Accounts
- */
-// CreateSocialAccountIfNotExists
-// https://stackoverflow.com/questions/4069718/postgres-insert-if-does-not-exist-already
-// ON CONFLICT DO NOTHING/UPDATE
-// http://www.postgresqltutorial.com/postgresql-upsert/
-func (self *User) CreateSocialAccountIfNotExists(user_id, username, account_type string) error {
-	err := self.db.Insert(`
-		INSERT INTO social_accounts(id, name, type, email)
-			VALUES ($1, $2, $3, $4)
-				ON CONFLICT DO NOTHING;
-	`, user_id, username, account_type, self.Username)
-	if nil != err && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
-		return nil
-	}
-	return nil
-}
-
-// CreateApikey
+// CreateApikey creates new apikey for user
 func (self *User) CreateApikey(name string) (*Apikey, error) {
 	var apikey Apikey
 	return &apikey, self.db.Select(&apikey, `
@@ -118,5 +101,24 @@ func (self *User) CreateApikey(name string) (*Apikey, error) {
 			'created_at', to_char(created_at, 'YYYY-MM-DD"T"HH:MI:SS"Z"'),
 			'updated_at', to_char(updated_at, 'YYYY-MM-DD"T"HH:MI:SS"Z"')
 		);
-	`)
+	`, self.Id, name)
+}
+
+/**
+ * Social Accounts
+ */
+// CreateSocialAccountIfNotExists
+// https://stackoverflow.com/questions/4069718/postgres-insert-if-does-not-exist-already
+// ON CONFLICT DO NOTHING/UPDATE
+// http://www.postgresqltutorial.com/postgresql-upsert/
+func (self *User) CreateSocialAccountIfNotExists(social_id, social_name, social_type string) error {
+	err := self.db.Insert(`
+		INSERT INTO social_accounts(id, name, type, user_id)
+			VALUES ($1, $2, $3, $4)
+				ON CONFLICT DO NOTHING;
+	`, social_id, social_name, social_type, self.Id)
+	if nil != err && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+		return nil
+	}
+	return nil
 }

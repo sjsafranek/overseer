@@ -4,11 +4,14 @@ CREATE TABLE social_accounts (
 	id		        VARCHAR,
 	name	        VARCHAR,
 	type	        VARCHAR DEFAULT 'unknown',
-	email			VARCHAR NOT NULL CHECK(email != ''),
+	user_id			UUID NOT NULL,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	CONSTRAINT account PRIMARY KEY(email, type),
-	FOREIGN KEY (email) REFERENCES users(username) ON DELETE CASCADE
+	-- email			VARCHAR NOT NULL CHECK(email != ''),
+	-- CONSTRAINT account PRIMARY KEY(email, type),
+	-- FOREIGN KEY (email) REFERENCES users(email) ON DELETE CASCADE
+	CONSTRAINT account PRIMARY KEY(user_id, type),
+	FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- @trigger update_social_accounts

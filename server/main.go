@@ -16,19 +16,19 @@ import (
 	"os"
 	"runtime"
 
-	pb "github.com/sjsafranek/goauthserver/service"
+	pb "github.com/sjsafranek/overseer/service"
 	"google.golang.org/grpc"
 	// "google.golang.org/grpc/codes"
 	// "google.golang.org/grpc/status"
-	"github.com/sjsafranek/logger"
 
-	"github.com/sjsafranek/goauthserver/server/config"
-	"github.com/sjsafranek/goauthserver/server/database"
+	"github.com/sjsafranek/logger"
+	"github.com/sjsafranek/overseer/server/config"
+	"github.com/sjsafranek/overseer/server/database"
 )
 
 const (
 	PROJECT                   string = "Overseer"
-	VERSION                   string = "0.0.2"
+	VERSION                   string = "0.0.3"
 	DEFAULT_HOST              string = ""
 	DEFAULT_PORT              int    = 50051
 	DEFAULT_DATABASE_ENGINE   string = "postgres"
@@ -57,6 +57,163 @@ var (
 	db                *database.Database
 	conf              *config.Config
 )
+
+type Server struct {
+	pb.UnimplementedOverseerServer
+}
+
+func successResponse(user *database.User, apikey *database.Apikey) (*pb.Response, error) {
+	response := pb.Response{Status: "ok"}
+
+	if nil != user {
+
+		var apikeys []*pb.Apikey
+		for _, apikey := range user.Apikeys {
+			apikeys = append(apikeys, &pb.Apikey{
+				UserId:    apikey.UserId,
+				Name:      apikey.Name,
+				Apikey:    apikey.Apikey,
+				Secret:    apikey.Secret,
+				IsActive:  apikey.IsActive,
+				IsDeleted: apikey.IsDeleted,
+				CreatedAt: apikey.CreatedAt.String(),
+				UpdatedAt: apikey.UpdatedAt.String(),
+			})
+		}
+
+		response.User = &pb.User{
+			Id:        user.Id,
+			Username:  user.Username,
+			Email:     user.Email,
+			IsActive:  user.IsActive,
+			IsDeleted: user.IsDeleted,
+			CreatedAt: user.CreatedAt.String(),
+			UpdatedAt: user.UpdatedAt.String(),
+			Apikeys:   apikeys,
+		}
+	}
+
+	if nil != apikey {
+		response.Apikey = &pb.Apikey{
+			UserId:    apikey.UserId,
+			Name:      apikey.Name,
+			Apikey:    apikey.Apikey,
+			Secret:    apikey.Secret,
+			IsActive:  apikey.IsActive,
+			IsDeleted: apikey.IsDeleted,
+			CreatedAt: apikey.CreatedAt.String(),
+			UpdatedAt: apikey.UpdatedAt.String(),
+		}
+	}
+
+	return &response, nil
+}
+
+// CreateUser creates new user
+func (self *Server) CreateUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
+	user, err := db.CreateUserIfNotExists(req.GetEmail(), req.GetUsername())
+	if nil != err {
+		return &pb.Response{}, err
+	}
+	return successResponse(user, nil)
+}
+
+// getUserByUsername retrieves user from database and passes it to callback function
+func getUserByUsername(username string, clbk func(*database.User) (*pb.Response, error)) (*pb.Response, error) {
+	user, err := db.GetUserByUsername(username)
+	if nil != err {
+		return &pb.Response{}, err
+	}
+	return clbk(user)
+}
+
+// AuthenticateUser checks user password
+func (self *Server) AuthenticateUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
+	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
+		ok, err := user.IsPassword(req.GetPassword())
+		if nil != err {
+			return &pb.Response{}, err
+		}
+		if !ok {
+			return &pb.Response{}, errors.New("Incorrect password")
+		}
+		return successResponse(user, nil)
+	})
+
+}
+
+// GetUser from database
+func (self *Server) GetUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
+	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
+		return successResponse(user, nil)
+	})
+}
+
+// DeleteUser markers user has deleted
+func (self *Server) DeleteUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
+	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
+		err := user.Delete()
+		if nil != err {
+			return &pb.Response{}, err
+		}
+		return successResponse(nil, nil)
+	})
+}
+
+// ActivateUser marks user as active
+func (self *Server) ActivateUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
+	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
+		err := user.Activate()
+		if nil != err {
+			return &pb.Response{}, err
+		}
+		return successResponse(nil, nil)
+	})
+}
+
+// DeactivateUser marks user as deactive
+func (self *Server) DeactivateUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
+	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
+		err := user.Deactivate()
+		if nil != err {
+			return &pb.Response{}, err
+		}
+		return successResponse(nil, nil)
+	})
+}
+
+// SetPassword sets new password for user
+func (self *Server) SetUserPassword(ctx context.Context, req *pb.Request) (*pb.Response, error) {
+	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
+		err := user.SetPassword(req.GetPassword())
+		if nil != err {
+			return &pb.Response{}, err
+		}
+		return successResponse(nil, nil)
+	})
+}
+
+// CreateUserApikey
+func (self *Server) CreateUserApikey(ctx context.Context, req *pb.Request) (*pb.Response, error) {
+	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
+		apikey, err := user.CreateApikey(req.GetName())
+		if nil != err {
+			return &pb.Response{}, err
+		}
+		return successResponse(nil, apikey)
+	})
+}
+
+// CreateUserSocialAccount
+func (self *Server) CreateUserSocialAccount(ctx context.Context, req *pb.Request) (*pb.Response, error) {
+	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
+		err := user.CreateSocialAccountIfNotExists(req.GetId(), req.GetName(), req.GetType())
+		if nil != err {
+			return &pb.Response{}, err
+		}
+		return successResponse(nil, nil)
+	})
+}
 
 func init() {
 	var printVersion bool
@@ -100,115 +257,9 @@ func init() {
 	}
 }
 
-type server struct {
-	pb.UnimplementedAuthenticationServer
-}
-
-func successResponse(user *database.User) (*pb.Response, error) {
-	if nil != user {
-		return &pb.Response{
-			Status: "ok",
-			User: &pb.User{
-				Username:  user.Username,
-				Email:     user.Email,
-				IsActive:  user.IsActive,
-				IsDeleted: user.IsDeleted,
-				CreatedAt: user.CreatedAt.String(),
-				UpdatedAt: user.UpdatedAt.String(),
-			},
-		}, nil
-	}
-	return &pb.Response{Status: "ok"}, nil
-}
-
-// CreateUser creates new user
-func (self *server) CreateUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-	user, err := db.CreateUserIfNotExists(req.GetEmail(), req.GetUsername())
-	if nil != err {
-		return &pb.Response{}, err
-	}
-	return successResponse(user)
-}
-
-// getUserByUsername retrieves user from database and passes it to callback function
-func getUserByUsername(username string, clbk func(*database.User) (*pb.Response, error)) (*pb.Response, error) {
-	user, err := db.GetUserByUsername(username)
-	if nil != err {
-		return &pb.Response{}, err
-	}
-	return clbk(user)
-}
-
-// AuthenticateUser checks user password
-func (self *server) AuthenticateUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
-		ok, err := user.IsPassword(req.GetPassword())
-		if nil != err {
-			return &pb.Response{}, err
-		}
-		if !ok {
-			return &pb.Response{}, errors.New("Incorrect password")
-		}
-		return successResponse(user)
-	})
-
-}
-
-// GetUser from database
-func (self *server) GetUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
-		return successResponse(user)
-	})
-}
-
-// DeleteUser markers user has deleted
-func (self *server) DeleteUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
-		err := user.Delete()
-		if nil != err {
-			return &pb.Response{}, err
-		}
-		return successResponse(nil)
-	})
-}
-
-// ActivateUser marks user as active
-func (self *server) ActivateUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
-		err := user.Activate()
-		if nil != err {
-			return &pb.Response{}, err
-		}
-		return successResponse(nil)
-	})
-}
-
-// DeactivateUser marks user as deactive
-func (self *server) DeactivateUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
-		err := user.Deactivate()
-		if nil != err {
-			return &pb.Response{}, err
-		}
-		return successResponse(nil)
-	})
-}
-
-// // UpdateUser
-// func (self *server) DeactivateUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-// 	return getUserByUsername(req.GetUsername(), func(user *database.User) (*pb.Response, error) {
-// 		err := user.UpdateUser()
-// 		if nil != err {
-// 			return &pb.Response{}, err
-// 		}
-// 		return successResponse(nil)
-// 	})
-// }
-
-// CreateUserSocialAccount
-
 func main() {
-	// Start up
+
+	logger.Infof("%v v%v", PROJECT, VERSION)
 	logger.Debug("GOOS: ", runtime.GOOS)
 	logger.Debug("CPUS: ", runtime.NumCPU())
 	logger.Debug("PID: ", os.Getpid())
@@ -225,15 +276,14 @@ func main() {
 	}
 	logger.Debugf("Database version: %v", version)
 
-	// Main
-	lis, err := net.Listen("tcp", fmt.Sprintf("%v:%v", HOST, PORT))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%v:%v", HOST, PORT))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	s := grpc.NewServer()
-	pb.RegisterAuthenticationServer(s, &server{})
-	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+	server := grpc.NewServer()
+	pb.RegisterOverseerServer(server, &Server{})
+	if err := server.Serve(listener); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
 	}
 }

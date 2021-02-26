@@ -11,6 +11,7 @@ import (
 	"github.com/sjsafranek/logger"
 )
 
+// New creates new Database object
 func New(connString string) *Database {
 	db, err := sql.Open("postgres", connString)
 	if nil != err {
@@ -22,11 +23,13 @@ func New(connString string) *Database {
 	return &Database{connString: connString, db: db}
 }
 
+// Database struct
 type Database struct {
 	connString string
 	db         *sql.DB // <- built in connection pool
 }
 
+// GetVersion returns database version
 func (self *Database) GetVersion() (string, error) {
 	var version string
 	return version, self.Exec(func(db *sql.DB) error {
@@ -43,15 +46,18 @@ func (self *Database) GetVersion() (string, error) {
 	})
 }
 
+// Exec passes sql.DB to callback
 func (self *Database) Exec(clbk func(*sql.DB) error) error {
 	return clbk(self.db)
 }
 
+// QueryRow wrapper for sql.DB QueryRow
 func (self *Database) QueryRow(query string, args ...interface{}) *sql.Row {
 	logger.Debug(query, args)
 	return self.db.QueryRow(query, args...)
 }
 
+// Insert new record to database
 func (self *Database) Insert(query string, args ...interface{}) error {
 	logger.Debug(query, args)
 	return self.Exec(func(db *sql.DB) error {
@@ -82,6 +88,7 @@ func (self *Database) Insert(query string, args ...interface{}) error {
 	})
 }
 
+// Select data from database
 func (self *Database) Select(model Model, query string, args ...interface{}) error {
 	logger.Debug(query, args)
 
@@ -103,13 +110,12 @@ func (self *Database) Select(model Model, query string, args ...interface{}) err
 	return nil
 }
 
-/**
- * APP FUNCTIONS
- */
+// CreateUser creates new user
 func (self *Database) CreateUser(email, username string) (*User, error) {
 	var user User
 	return &user, self.Select(&user, `
 		INSERT INTO users (email, username) VALUES ($1, $2) RETURNING json_build_object(
+			'id', id,
 			'email', email,
 			'username', username,
 			'is_active', is_active,
@@ -120,6 +126,7 @@ func (self *Database) CreateUser(email, username string) (*User, error) {
 	`, email, username)
 }
 
+// CreateUserIfNotExists creates new user if does not exist
 func (self *Database) CreateUserIfNotExists(email, username string) (*User, error) {
 	user, err := self.CreateUser(email, username)
 	if nil != err && strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
@@ -128,29 +135,29 @@ func (self *Database) CreateUserIfNotExists(email, username string) (*User, erro
 	return user, nil
 }
 
-//
+// getUserBy get user by a column
 func (self *Database) getUserBy(key, value string) (*User, error) {
 	var user User
 	return &user, self.Select(&user, fmt.Sprintf(`
 		SELECT
 			user_json
 		FROM users_view
-		WHERE %v = $1;
+		WHERE is_deleted = false
+			AND %v = $1;
 	`, key), value)
 }
 
+// GetUserByEmail get user by email
 func (self *Database) GetUserByEmail(email string) (*User, error) {
 	return self.getUserBy("email", email)
 }
 
+// GetUserByUsername get user by username
 func (self *Database) GetUserByUsername(username string) (*User, error) {
 	return self.getUserBy("username", username)
 }
 
-// func (self *Database) GetUserByApikey(apikey string) (*User, error) {
-// 	return self.getUserBy("apikey", apikey)
-// }
-
+// GetUsers get list of users
 func (self *Database) GetUsers() ([]*User, error) {
 	var users []*User
 	return users, self.Exec(func(db *sql.DB) error {
@@ -159,9 +166,8 @@ func (self *Database) GetUsers() ([]*User, error) {
 			SELECT
 				json_agg(user_json)
 			FROM users_view
-			WHERE
-				is_deleted = false
-			;`)
+			WHERE is_deleted = false;
+		`)
 		if nil != err {
 			return err
 		}

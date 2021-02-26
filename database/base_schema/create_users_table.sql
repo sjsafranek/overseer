@@ -7,11 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
     id              UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
     username        VARCHAR(50) NOT NULL PRIMARY KEY CHECK(username != ''),
     email           VARCHAR(50) NOT NULL CHECK(email != ''),
-    -- apikey          VARCHAR(32) NOT NULL UNIQUE DEFAULT md5(random()::text),
-    -- secret_token    VARCHAR(32) NOT NULL DEFAULT md5(random()::text),
     is_active       BOOLEAN DEFAULT TRUE,
     is_deleted      BOOLEAN DEFAULT FALSE,
-    is_superuser    BOOLEAN DEFAULT FALSE,
     salt            VARCHAR DEFAULT gen_salt('bf', 8),
     password        VARCHAR,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -102,4 +99,4 @@ CREATE TRIGGER users_clean
 
 
 
-INSERT INTO users (username, email, password, is_superuser) VALUES('admin_user', 'admin_user', 'dev', TRUE);
+INSERT INTO users (username, email, password) VALUES('admin_user', 'admin_user', 'dev');

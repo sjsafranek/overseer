@@ -7,26 +7,29 @@ option java_multiple_files = true;
 option java_package = "overseer";
 option java_outer_classname = "OverseerProto";
 
-package authenticate;
+package overseer;
 
 // The service definition.
-service Authentication {
+service Overseer {
     rpc AuthenticateUser(Request) returns (Response) {}
     rpc GetUser(Request) returns (Response) {}
     rpc CreateUser(Request) returns (Response) {}
     rpc DeleteUser(Request) returns (Response) {}
     rpc ActivateUser(Request) returns (Response) {}
     rpc DeactivateUser(Request) returns (Response) {}
-    rpc UpdateUser(Request) returns (Response) {}
+    rpc SetUserPassword(Request) returns (Response) {}
+    rpc CreateUserApikey(Request) returns (Response) {}
     rpc CreateUserSocialAccount(Request) returns (Response) {}
-    rpc CreateApikey(Request) returns (Response) {}
 }
 
-// The request message containing the user's name.
+// The request message
 message Request {
-    string username = 1;
-    string password = 2;
-    string email = 3;
+    string email = 1;
+    string username = 2;
+    string password = 3;
+    string name = 4;
+    string id = 5;
+    string type = 6;
 }
 
 message Response {
