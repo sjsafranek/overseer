@@ -111,7 +111,7 @@ func successResponse(user *database.User, apikey *database.Apikey) (*pb.Response
 
 // CreateUser creates new user
 func (self *Server) CreateUser(ctx context.Context, req *pb.Request) (*pb.Response, error) {
-	user, err := db.CreateUserIfNotExists(req.GetEmail(), req.GetUsername())
+	user, err := db.CreateUser(req.GetEmail(), req.GetUsername())
 	if nil != err {
 		return &pb.Response{}, err
 	}
@@ -224,12 +224,12 @@ func init() {
 			Port: DEFAULT_PORT,
 		},
 		Database: config.Database{
-			DatabaseEngine: DATABASE_ENGINE,
-			DatabaseHost:   DEFAULT_DATABASE_HOST,
-			DatabaseName:   DEFAULT_DATABASE_DATABASE,
-			DatabasePass:   DEFAULT_DATABASE_PASSWORD,
-			DatabaseUser:   DEFAULT_DATABASE_USERNAME,
-			DatabasePort:   DEFAULT_DATABASE_PORT,
+			Engine: DATABASE_ENGINE,
+			Host:   DEFAULT_DATABASE_HOST,
+			Name:   DEFAULT_DATABASE_DATABASE,
+			Pass:   DEFAULT_DATABASE_PASSWORD,
+			User:   DEFAULT_DATABASE_USERNAME,
+			Port:   DEFAULT_DATABASE_PORT,
 		},
 		Redis: config.Redis{
 			Host: DEFAULT_REDIS_HOST,
@@ -239,11 +239,11 @@ func init() {
 
 	flag.StringVar(&conf.Server.Host, "host", DEFAULT_HOST, "Server host")
 	flag.IntVar(&conf.Server.Port, "port", DEFAULT_PORT, "Server port")
-	flag.StringVar(&conf.Database.DatabaseHost, "dbhost", DEFAULT_DATABASE_HOST, "database host")
-	flag.StringVar(&conf.Database.DatabaseName, "dbname", DEFAULT_DATABASE_DATABASE, "database name")
-	flag.StringVar(&conf.Database.DatabasePass, "dbpass", DEFAULT_DATABASE_PASSWORD, "database password")
-	flag.StringVar(&conf.Database.DatabaseUser, "dbuser", DEFAULT_DATABASE_USERNAME, "database username")
-	flag.Int64Var(&conf.Database.DatabasePort, "dbport", DEFAULT_DATABASE_PORT, "Database port")
+	flag.StringVar(&conf.Database.Host, "dbhost", DEFAULT_DATABASE_HOST, "database host")
+	flag.StringVar(&conf.Database.Name, "dbname", DEFAULT_DATABASE_DATABASE, "database name")
+	flag.StringVar(&conf.Database.Pass, "dbpass", DEFAULT_DATABASE_PASSWORD, "database password")
+	flag.StringVar(&conf.Database.User, "dbuser", DEFAULT_DATABASE_USERNAME, "database username")
+	flag.Int64Var(&conf.Database.Port, "dbport", DEFAULT_DATABASE_PORT, "Database port")
 	flag.StringVar(&conf.Redis.Host, "redishost", DEFAULT_REDIS_HOST, "Redis host")
 	flag.Int64Var(&conf.Redis.Port, "redisport", DEFAULT_REDIS_PORT, "Redis port")
 	flag.StringVar(&CONFIG_FILE, "c", DEFAULT_CONFIG_FILE, "config file")

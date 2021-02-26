@@ -25,20 +25,20 @@ func (self *Redis) GetConnectionString() string {
 }
 
 type Database struct {
-	DatabaseEngine string
-	DatabaseName   string
-	DatabasePass   string
-	DatabaseUser   string
-	DatabaseHost   string
-	DatabasePort   int64
+	Engine string
+	Name   string
+	Pass   string
+	User   string
+	Host   string
+	Port   int64
 }
 
 func (self *Database) GetDatabaseConnection() string {
 	return fmt.Sprintf("%v://%v:%v@%v:%v/%v?sslmode=disable",
-		self.DatabaseEngine,
-		self.DatabaseUser,
-		self.DatabasePass,
-		self.DatabaseHost,
-		self.DatabasePort,
-		self.DatabaseName)
+		self.Engine,
+		self.User,
+		self.Pass,
+		self.Host,
+		self.Port,
+		self.Name)
 }

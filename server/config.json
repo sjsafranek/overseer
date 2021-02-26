@@ -5,9 +5,9 @@
 	},
 	"database": {
 		"engine": "postgres",
-		"dbname": "overseer",
-		"dbpass": "dev",
-		"dbuser": "overseer",
+		"name": "overseer",
+		"pass": "dev",
+		"user": "overseer",
 		"host": "localhost",
 		"port": 5432,
 		"sslmode": "disable"

@@ -22,10 +22,12 @@ func main() {
 
 	var username string
 	var password string
+	var email string
 	var host string
 	var port int64
 	flag.StringVar(&username, "username", "", "username")
 	flag.StringVar(&password, "password", "", "password")
+	flag.StringVar(&email, "email", "", "email")
 	flag.StringVar(&host, "host", "localhost", "server host")
 	flag.Int64Var(&port, "port", 50051, "server port")
 	flag.Parse()
@@ -44,6 +46,31 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
+	// Get action command from command line args
+	action := "login"
+	args := flag.Args()
+	if 0 != len(args) {
+		action = args[0]
+	}
+
+	if "create_user" == action {
+
+		_, err := client.CreateUser(ctx, &pb.Request{Username: username, Email: email})
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if "" != password {
+			_, err = client.SetUserPassword(ctx, &pb.Request{Username: username, Password: password})
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+
+		log.Println("ok")
+		return
+	}
+
 	// Authenticate user
 	response, err := client.AuthenticateUser(ctx, &pb.Request{Username: username, Password: password})
 	if err != nil {
@@ -51,6 +78,12 @@ func main() {
 	}
 	user := response.GetUser()
 	log.Printf("%+v", user)
+
+
+	if "login" == action {
+		return
+	}
+
 
 	// Create apikey if none exists
 	if 0 == len(user.GetApikeys()) {
