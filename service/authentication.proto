@@ -1,0 +1,66 @@
+// Copyright 2021 stefan safranek.
+
+syntax = "proto3";
+
+option go_package = "github.com/sjsafranek/overseer/service";
+option java_multiple_files = true;
+option java_package = "overseer";
+option java_outer_classname = "OverseerProto";
+
+package authenticate;
+
+// The service definition.
+service Authentication {
+    rpc AuthenticateUser(Request) returns (Response) {}
+    rpc GetUser(Request) returns (Response) {}
+    rpc CreateUser(Request) returns (Response) {}
+    rpc DeleteUser(Request) returns (Response) {}
+    rpc ActivateUser(Request) returns (Response) {}
+    rpc DeactivateUser(Request) returns (Response) {}
+    rpc UpdateUser(Request) returns (Response) {}
+    rpc CreateUserSocialAccount(Request) returns (Response) {}
+    rpc CreateApikey(Request) returns (Response) {}
+}
+
+// The request message containing the user's name.
+message Request {
+    string username = 1;
+    string password = 2;
+    string email = 3;
+}
+
+message Response {
+    string status = 1;
+    Error error = 2;
+    User user = 3;
+    Apikey apikey = 4;
+}
+
+message Error {
+	string code = 1;
+	string message = 2;
+}
+
+// The user definition
+message User {
+    string id = 1;
+    string username = 2;
+    string email = 3;
+    bool is_deleted = 4;
+    bool is_active = 5;
+    string created_at = 6;
+    string updated_at = 7;
+    repeated Apikey apikeys = 8;
+}
+
+// The apikey definition
+message Apikey {
+    string user_id = 1;
+    string name = 2;
+    string apikey = 3;
+    string secret = 4;
+    bool is_deleted = 5;
+    bool is_active = 6;
+    string created_at = 7;
+    string updated_at = 8;
+}
