@@ -28,7 +28,7 @@ import (
 
 const (
 	PROJECT                   string = "Overseer"
-	VERSION                   string = "0.0.3"
+	VERSION                   string = "0.0.4"
 	DEFAULT_HOST              string = ""
 	DEFAULT_PORT              int    = 50051
 	DEFAULT_DATABASE_ENGINE   string = "postgres"
@@ -139,7 +139,6 @@ func (self *Server) AuthenticateUser(ctx context.Context, req *pb.Request) (*pb.
 		}
 		return successResponse(user, nil)
 	})
-
 }
 
 // GetUser from database
@@ -238,7 +237,7 @@ func init() {
 		},
 	}
 
-	flag.StringVar(&conf.Server.Host, "Host", DEFAULT_HOST, "Server host")
+	flag.StringVar(&conf.Server.Host, "host", DEFAULT_HOST, "Server host")
 	flag.IntVar(&conf.Server.Port, "port", DEFAULT_PORT, "Server port")
 	flag.StringVar(&conf.Database.DatabaseHost, "dbhost", DEFAULT_DATABASE_HOST, "database host")
 	flag.StringVar(&conf.Database.DatabaseName, "dbname", DEFAULT_DATABASE_DATABASE, "database name")

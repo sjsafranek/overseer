@@ -27,6 +27,19 @@ CREATE OR REPLACE VIEW users_view AS (
                     )
                     FROM apikeys WHERE apikeys.user_id = users.id AND apikeys.is_deleted = false
                 ) c
+            ),
+            'social_accounts', (
+                SELECT json_agg(c) FROM (
+                    SELECT
+                    json_build_object(
+                        'id', accounts.id,
+                        'name', accounts.name,
+                        'type', accounts.type,
+                        'created_at', to_char(accounts.created_at, 'YYYY-MM-DD"T"HH:MI:SS"Z"'),
+                        'updated_at', to_char(accounts.updated_at, 'YYYY-MM-DD"T"HH:MI:SS"Z"')
+                    )
+                    FROM social_accounts AS accounts
+                ) c
             )
         ) AS user_json
     FROM users

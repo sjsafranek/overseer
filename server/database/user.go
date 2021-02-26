@@ -9,16 +9,17 @@ import (
 
 // User struct of user object
 type User struct {
-	Id        string    `json:"id"`
-	Username  string    `json:"username"`
-	Password  string    `json:"-"`
-	Email     string    `json:"email"`
-	IsDeleted bool      `json:"is_deleted"`
-	IsActive  bool      `json:"is_active"`
-	CreatedAt time.Time `json:"created_at,string"`
-	UpdatedAt time.Time `json:"updated_at,string"`
-	Apikeys   []Apikey  `json:"apikeys"`
-	db        *Database `json:"-"`
+	Id             string         `json:"id"`
+	Username       string         `json:"username"`
+	Password       string         `json:"-"`
+	Email          string         `json:"email"`
+	IsDeleted      bool           `json:"is_deleted"`
+	IsActive       bool           `json:"is_active"`
+	CreatedAt      time.Time      `json:"created_at,string"`
+	UpdatedAt      time.Time      `json:"updated_at,string"`
+	Apikeys        []Apikey       `json:"apikeys"`
+	SocialAccounts *[]interface{} `json:"social_accounts"`
+	db             *Database      `json:"-"`
 }
 
 // SetEmail sets user email
