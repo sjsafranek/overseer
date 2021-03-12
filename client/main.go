@@ -9,22 +9,31 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"time"
-	"flag"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
 
-	"google.golang.org/grpc"
 	pb "github.com/sjsafranek/overseer/service"
+	"google.golang.org/grpc"
 )
 
-func main() {
+func messageToJSON(message proto.Message) string {
+	jbytes, _ := protojson.Marshal(message)
+	return string(jbytes)
+}
 
+
+func main() {
+	var name string
 	var username string
 	var password string
 	var email string
 	var host string
 	var port int64
+	flag.StringVar(&name, "name", "", "name")
 	flag.StringVar(&username, "username", "", "username")
 	flag.StringVar(&password, "password", "", "password")
 	flag.StringVar(&email, "email", "", "email")
@@ -54,42 +63,36 @@ func main() {
 	}
 
 	if "create_user" == action {
-
-		_, err := client.CreateUser(ctx, &pb.Request{Username: username, Email: email})
+		user, err := client.CreateUser(ctx, &pb.Request{Username: username, Email: email})
 		if err != nil {
 			log.Fatal(err)
 		}
-
 		if "" != password {
 			_, err = client.SetUserPassword(ctx, &pb.Request{Username: username, Password: password})
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
-
-		log.Println("ok")
+		fmt.Println(messageToJSON(user))
 		return
 	}
-
-	// Authenticate user
-	response, err := client.AuthenticateUser(ctx, &pb.Request{Username: username, Password: password})
-	if err != nil {
-		log.Fatal(err)
-	}
-	user := response.GetUser()
-	log.Printf("%+v", user)
-
 
 	if "login" == action {
-		return
-	}
-
-	// Create apikey if none exists
-	if 0 == len(user.GetApikeys()) {
-		response, err = client.CreateUserApikey(ctx, &pb.Request{Username: username, Name: "test_key"})
+		response, err := client.AuthenticateUser(ctx, &pb.Request{Username: username, Password: password})
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("%+v", response.GetApikey())
+		user := response.GetUser()
+		fmt.Println(messageToJSON(user))
+		return
+	}
+
+	if "create_key" == action {
+		response, err := client.CreateUserApikey(ctx, &pb.Request{Username: username, Name: name})
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(messageToJSON(response.GetApikey()))
+		return
 	}
 }
